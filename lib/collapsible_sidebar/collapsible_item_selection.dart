@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 class CollapsibleItemSelection extends StatefulWidget {
   const CollapsibleItemSelection({
+    Key? key,
     required this.height,
     required this.offsetY,
     required this.color,
     required this.duration,
     required this.curve,
-  });
+  }) : super(key: key);
 
   final double height, offsetY;
   final Color color;
@@ -15,10 +16,12 @@ class CollapsibleItemSelection extends StatefulWidget {
   final Curve curve;
 
   @override
-  _CollapsibleItemSelectionState createState() => _CollapsibleItemSelectionState();
+  State<CollapsibleItemSelection> createState() =>
+      _CollapsibleItemSelectionState();
 }
 
-class _CollapsibleItemSelectionState extends State<CollapsibleItemSelection> with SingleTickerProviderStateMixin {
+class _CollapsibleItemSelectionState extends State<CollapsibleItemSelection>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _offsetYAnimation;
   late CurvedAnimation _curvedAnimation;
@@ -41,8 +44,7 @@ class _CollapsibleItemSelectionState extends State<CollapsibleItemSelection> wit
     _offsetYAnimation = _createAnimation(0, widget.offsetY);
 
     _oldOffsetY = widget.offsetY;
-    _controller.addListener(() => setState(() {}));
-    _controller.forward();
+    _controller..addListener(() => setState(() {}))..forward();
   }
 
   @override
@@ -51,8 +53,7 @@ class _CollapsibleItemSelectionState extends State<CollapsibleItemSelection> wit
 
     _offsetYAnimation = _createAnimation(_oldOffsetY, widget.offsetY);
     _oldOffsetY = widget.offsetY;
-    _controller.reset();
-    _controller.forward();
+    _controller..reset()..forward();
 
     super.didUpdateWidget(oldWidget);
   }

@@ -1,3 +1,4 @@
+// ignore_for_file: member-ordering-extended
 library collapsible_sidebar;
 
 import 'dart:math' as math show pi;
@@ -13,6 +14,7 @@ export 'package:collapsible_sidebar/collapsible_sidebar/collapsible_item.dart';
 
 class CollapsibleSidebar extends StatefulWidget {
   const CollapsibleSidebar({
+    Key? key,
     required this.items,
     this.title = 'Lorem Ipsum',
     this.titleStyle,
@@ -45,13 +47,16 @@ class CollapsibleSidebar extends StatefulWidget {
     required this.body,
     this.onTitleTap,
     this.isCollapsed = true,
-    this.sidebarBoxShadow = const [BoxShadow(
-      color: Colors.blue,
-      blurRadius: 10,
-      spreadRadius: 0.01,
-      offset: Offset(3, 3),
-    ),],
-  });
+    this.sidebarBoxShadow = const [
+      BoxShadow(
+        color: Colors.blue,
+        blurRadius: 10,
+        spreadRadius: 0.01,
+        offset: Offset(3, 3),
+      ),
+    ],
+    this.onToggleButtonTap,
+  }) : super(key: key);
 
   final String title, toggleTitle;
   final MouseCursor onHoverPointer;
@@ -59,7 +64,7 @@ class CollapsibleSidebar extends StatefulWidget {
   final bool titleBack;
   final IconData titleBackIcon;
   final Widget body;
-  final avatarImg;
+  final ImageProvider<Object>? avatarImg;
   final bool showToggleButton, fitItemsToBottom, isCollapsed;
   final List<CollapsibleItem> items;
   final double height,
@@ -67,7 +72,9 @@ class CollapsibleSidebar extends StatefulWidget {
       maxWidth,
       borderRadius,
       iconSize,
+      // ignore: avoid_field_initializers_in_const_classes
       padding = 10,
+      // ignore: avoid_field_initializers_in_const_classes
       itemPadding = 10,
       topPadding,
       bottomPadding,
@@ -82,10 +89,11 @@ class CollapsibleSidebar extends StatefulWidget {
   final Duration duration;
   final Curve curve;
   final VoidCallback? onTitleTap;
+  final void Function(bool)? onToggleButtonTap;
   final List<BoxShadow> sidebarBoxShadow;
 
   @override
-  _CollapsibleSidebarState createState() => _CollapsibleSidebarState();
+  State<CollapsibleSidebar> createState() => _CollapsibleSidebarState();
 }
 
 class _CollapsibleSidebarState extends State<CollapsibleSidebar>
@@ -95,8 +103,8 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
   late CurvedAnimation _curvedAnimation;
   late double tempWidth;
 
-  var _isCollapsed;
-  late double _currWidth,
+  late bool _isCollapsed;
+  late double _currentWidth,
       _delta,
       _delta1By4,
       _delta3by4,
@@ -106,13 +114,13 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
 
   @override
   void initState() {
-    assert(widget.items.isNotEmpty);
+    assert(widget.items.isNotEmpty, 'Items cannot be empty');
 
     super.initState();
 
     tempWidth = widget.maxWidth > 270 ? 270 : widget.maxWidth;
 
-    _currWidth = widget.minWidth;
+    _currentWidth = widget.minWidth;
     _delta = tempWidth - widget.minWidth;
     _delta1By4 = _delta * 0.25;
     _delta3by4 = _delta * 0.75;
@@ -135,45 +143,49 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
     );
 
     _controller.addListener(() {
-      _currWidth = _widthAnimation.value;
-      if (_controller.isCompleted) _isCollapsed = _currWidth == widget.minWidth;
+      _currentWidth = _widthAnimation.value;
+      if (_controller.isCompleted) {
+        _isCollapsed = _currentWidth == widget.minWidth;
+      }
       setState(() {});
     });
 
     _isCollapsed = widget.isCollapsed;
-    var endWidth = _isCollapsed ? widget.minWidth : tempWidth;
+    final endWidth = _isCollapsed ? widget.minWidth : tempWidth;
     _animateTo(endWidth);
   }
 
   void _animateTo(double endWidth) {
     _widthAnimation = Tween<double>(
-      begin: _currWidth,
+      begin: _currentWidth,
       end: endWidth,
     ).animate(_curvedAnimation);
-    _controller.reset();
-    _controller.forward();
+    _controller
+      ..reset()
+      ..forward();
   }
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (details.primaryDelta != null) {
-      _currWidth += details.primaryDelta!;
-      if (_currWidth > tempWidth)
-        _currWidth = tempWidth;
-      else if (_currWidth < widget.minWidth)
-        _currWidth = widget.minWidth;
-      else
+      _currentWidth += details.primaryDelta!;
+      if (_currentWidth > tempWidth) {
+        _currentWidth = tempWidth;
+      } else if (_currentWidth < widget.minWidth) {
+        _currentWidth = widget.minWidth;
+      } else {
         setState(() {});
+      }
     }
   }
 
   void _onHorizontalDragEnd(DragEndDetails _) {
-    if (_currWidth == tempWidth)
+    if (_currentWidth == tempWidth) {
       setState(() => _isCollapsed = false);
-    else if (_currWidth == widget.minWidth)
+    } else if (_currentWidth == widget.minWidth) {
       setState(() => _isCollapsed = true);
-    else {
-      var threshold = _isCollapsed ? _delta1By4 : _delta3by4;
-      var endWidth = _currWidth - widget.minWidth > threshold
+    } else {
+      final threshold = _isCollapsed ? _delta1By4 : _delta3by4;
+      final endWidth = _currentWidth - widget.minWidth > threshold
           ? tempWidth
           : widget.minWidth;
       _animateTo(endWidth);
@@ -196,7 +208,7 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
             onHorizontalDragEnd: _onHorizontalDragEnd,
             child: CollapsibleContainer(
               height: widget.height,
-              width: _currWidth,
+              width: _currentWidth,
               padding: widget.padding,
               borderRadius: widget.borderRadius,
               color: widget.backgroundColor,
@@ -205,12 +217,10 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _avatar,
-                  SizedBox(
-                    height: widget.topPadding,
-                  ),
+                  SizedBox(height: widget.topPadding),
                   Expanded(
                     child: SingleChildScrollView(
-                      physics: BouncingScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       reverse: widget.fitItemsToBottom,
                       child: Stack(
                         children: [
@@ -221,31 +231,25 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
                             duration: widget.duration,
                             curve: widget.curve,
                           ),
-                          Column(
-                            children: _items,
-                          ),
+                          Column(children: _items),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(
-                    height: widget.bottomPadding,
-                  ),
-                  widget.showToggleButton
-                      ? Divider(
-                          color: widget.unselectedIconColor,
-                          indent: 5,
-                          endIndent: 5,
-                          thickness: 1,
-                        )
-                      : SizedBox(
-                          height: 5,
-                        ),
-                  widget.showToggleButton
-                      ? _toggleButton
-                      : SizedBox(
-                          height: widget.iconSize,
-                        ),
+                  SizedBox(height: widget.bottomPadding),
+                  if (widget.showToggleButton)
+                    Divider(
+                      color: widget.unselectedIconColor,
+                      indent: 5,
+                      endIndent: 5,
+                      thickness: 1,
+                    )
+                  else
+                    const SizedBox(height: 5),
+                  if (widget.showToggleButton)
+                    _toggleButton
+                  else
+                    SizedBox(height: widget.iconSize),
                 ],
               ),
             ),
@@ -282,7 +286,7 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
 
   List<Widget> get _items {
     return List.generate(widget.items.length, (index) {
-      var item = widget.items[index];
+      final item = widget.items[index];
       var iconColor = widget.unselectedIconColor;
       var textColor = widget.unselectedTextColor;
       if (item.isSelected) {
@@ -319,7 +323,7 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
       offsetX: _offsetX,
       scale: _fraction,
       leading: Transform.rotate(
-        angle: _currAngle,
+        angle: _currentAngle,
         child: Icon(
           widget.toggleButtonIcon,
           size: widget.iconSize,
@@ -331,14 +335,15 @@ class _CollapsibleSidebarState extends State<CollapsibleSidebar>
           _textStyle(widget.unselectedTextColor, widget.toggleTitleStyle),
       onTap: () {
         _isCollapsed = !_isCollapsed;
-        var endWidth = _isCollapsed ? widget.minWidth : tempWidth;
+        widget.onToggleButtonTap?.call(_isCollapsed);
+        final endWidth = _isCollapsed ? widget.minWidth : tempWidth;
         _animateTo(endWidth);
       },
     );
   }
 
-  double get _fraction => (_currWidth - widget.minWidth) / _delta;
-  double get _currAngle => -math.pi * _fraction;
+  double get _fraction => (_currentWidth - widget.minWidth) / _delta;
+  double get _currentAngle => -math.pi * _fraction;
   double get _offsetX => _maxOffsetX * _fraction;
 
   TextStyle _textStyle(Color color, TextStyle? style) {
